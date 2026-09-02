@@ -6,7 +6,7 @@ import { Module5Weights, PipelineResult, UserPreferences } from '../types/touris
 import { rescore, runPipeline } from '../utils/pipeline';
 import { greedyRankPlans } from '../lib/api/ranking';
 import { calculateFeasibility } from '../lib/api/feasibility';
-import { createAttractionSelection, generateCandidatePlans } from '../lib/api/attractions';
+import { createAttractionSelection } from '../lib/api/attractions';
 import { createTourismNetwork } from '../lib/api/network';
 import { optimizeFromNetworkId } from '../lib/api/optimization';
 
@@ -113,7 +113,7 @@ export const usePlannerStore = create<PlannerState>()(
             const startPt = getPoint(state.preferences.startHubId);
             const endPt = getPoint(state.preferences.endHubId);
 
-            // 1. Direct MongoDB persistence call to POST /attraction-selection (saves document to 'attractionselections' collection)
+            // 1. POST /attraction-selection → persists EXACT user input (destinationCount, userInterests, candidatePlans) to 'attractionselections'
             await createAttractionSelection({
               selectionId: `SEL${Date.now()}`,
               tripDuration: state.preferences.days,
@@ -136,7 +136,11 @@ export const usePlannerStore = create<PlannerState>()(
                     attraction: {
                       id: pt.id,
                       name: pt.name,
-                      categories: [item ? item.province.toUpperCase() : 'SRI LANKA'],
+                      categories: item
+                        ? (Object.entries(item.scores) as [string, number][])
+                            .filter(([, score]) => score > 0)
+                            .map(([key]) => key.toUpperCase())
+                        : ['NATURE'],
                       isAvailable: true,
                       latitude: pt.lat,
                       longitude: pt.lng,
@@ -149,35 +153,6 @@ export const usePlannerStore = create<PlannerState>()(
                   };
                 })
               }))
-            });
-
-            // 2. Call POST /attraction-selection/plans — this endpoint persists to MongoDB attractionselections
-            // Categories must be InterestCategory enum values (e.g. NATURE, CULTURE, BEACH)
-            // derived from the attraction's scores keys (not province names)
-            await generateCandidatePlans({
-              tripDuration: state.preferences.days,
-              travelStyle: travelStyleUpper,
-              userInterests,
-              availableAttractions: ATTRACTIONS.map((a) => {
-                // Convert scores keys with non-zero values to InterestCategory enum strings
-                const categories = (Object.entries(a.scores) as [string, number][])
-                  .filter(([, score]) => score > 0)
-                  .map(([key]) => key.toUpperCase()); // nature->NATURE, culture->CULTURE, etc.
-                return {
-                  id: a.id,
-                  name: a.name,
-                  categories,
-                  isAvailable: true,
-                  latitude: a.lat,
-                  longitude: a.lng,
-                  region: a.city,
-                  district: a.city,
-                  rating: a.popularity
-                };
-              }),
-              preferredTransportation: state.preferences.transport,
-              startingLocation: { name: startPt.city || startPt.name, latitude: startPt.lat, longitude: startPt.lng },
-              endingLocation: { name: endPt.city || endPt.name, latitude: endPt.lat, longitude: endPt.lng }
             });
 
             // STEP 3: POST /travel-plan-ranking/greedy → saves to 'travelplanrankings' collection
