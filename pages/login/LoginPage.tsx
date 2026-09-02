@@ -12,28 +12,29 @@ export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
-  const { login, isLoading, setUser } = useAuthStore();
+  const { login, isLoading } = useAuthStore();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
+
     if (!email) {
-      setLocalError('Please enter your email.');
+      setLocalError('Please enter your email address.');
+      return;
+    }
+
+    if (!password || password.length < 8) {
+      setLocalError('Password must be at least 8 characters long.');
       return;
     }
 
     try {
       await login({ email, password });
       router.push('/planner');
-    } catch {
-      // Fallback demo user login if NestJS endpoint fails or for local test
-      setUser({
-        id: 'demo-user-1',
-        name: email.split('@')[0] || 'User',
-        email: email
-      });
-      router.push('/planner');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Invalid email or password';
+      setLocalError(msg);
     }
   };
 
@@ -52,7 +53,7 @@ export function LoginPage() {
         <CardBody>
           <form onSubmit={handleSubmit} className="space-y-4">
             {localError ? (
-              <div className="rounded-xl border border-alert-100 bg-alert-50 p-3 text-xs text-alert-600">
+              <div className="rounded-xl border border-alert-100 bg-alert-50 p-3.5 text-xs font-medium text-alert-600 leading-relaxed">
                 {localError}
               </div>
             ) : null}
@@ -74,7 +75,7 @@ export function LoginPage() {
 
             <div>
               <label htmlFor="pass" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
-                Password
+                Password (min 8 characters)
               </label>
               <input
                 id="pass"
@@ -82,6 +83,8 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                minLength={8}
+                required
                 className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm font-medium text-ink outline-none focus:border-forest-400"
               />
             </div>
@@ -105,4 +108,3 @@ export function LoginPage() {
 }
 
 export default LoginPage;
-

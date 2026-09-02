@@ -29,7 +29,7 @@ export function ProfilePage() {
               USER PROFILE
             </Badge>
             <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-              {user?.name}
+              {user?.firstName} {user?.lastName}
             </h1>
             <p className="text-sm text-ink-muted">{user?.email}</p>
           </div>

@@ -226,7 +226,10 @@ export interface PipelineResult {
 
 export interface User {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  role?: string;
+  phone?: string;
+  dateOfBirth?: Date | string;
+  country?: string;
 }

@@ -87,7 +87,7 @@ export function Header() {
                 className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-forest-700 hover:bg-forest-50"
               >
                 <UserIcon className="h-3.5 w-3.5" />
-                <span>{user.name}</span>
+                <span>{user.firstName} {user.lastName}</span>
               </Link>
               <button
                 onClick={logout}

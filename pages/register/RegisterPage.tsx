@@ -9,33 +9,64 @@ import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 
 export function RegisterPage() {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [country, setCountry] = useState('United Kingdom');
+  const [phone, setPhone] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [country, setCountry] = useState('');
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
-  const { register, isLoading, setUser } = useAuthStore();
+  const { register, isLoading } = useAuthStore();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLocalError('');
-    if (!name || !email) {
-      setLocalError('Please fill in your name and email.');
+
+    if (!firstName.trim()) {
+      setLocalError('Please enter your first name.');
+      return;
+    }
+    if (!lastName.trim()) {
+      setLocalError('Please enter your last name.');
+      return;
+    }
+    if (!email.trim()) {
+      setLocalError('Please enter your email address.');
+      return;
+    }
+    if (!phone.trim()) {
+      setLocalError('Please enter your phone number.');
+      return;
+    }
+    if (!dateOfBirth) {
+      setLocalError('Please enter your date of birth.');
+      return;
+    }
+    if (!country.trim()) {
+      setLocalError('Please enter your country of residence.');
+      return;
+    }
+    if (!password || password.length < 8) {
+      setLocalError('Password must be at least 8 characters long.');
       return;
     }
 
     try {
-      await register({ name, email, country, password });
-      router.push('/planner');
-    } catch {
-      // Fallback demo user registration
-      setUser({
-        id: 'demo-user-new',
-        name,
-        email
+      await register({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        dateOfBirth,
+        country: country.trim(),
+        password
       });
       router.push('/planner');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Registration failed';
+      setLocalError(msg);
     }
   };
 
@@ -52,26 +83,43 @@ export function RegisterPage() {
       <Card>
         <CardHeader title="Register User Profile" subtitle="Save and compare multi-criteria itineraries." />
         <CardBody>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {localError ? (
-              <div className="rounded-xl border border-alert-100 bg-alert-50 p-3 text-xs text-alert-600">
+              <div className="rounded-xl border border-alert-100 bg-alert-50 p-3.5 text-xs font-medium text-alert-600 leading-relaxed">
                 {localError}
               </div>
             ) : null}
 
-            <div>
-              <label htmlFor="reg-name" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
-                Full Name
-              </label>
-              <input
-                id="reg-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Smith"
-                required
-                className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm font-medium text-ink outline-none focus:border-forest-400"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="reg-fname" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
+                  First Name
+                </label>
+                <input
+                  id="reg-fname"
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="John"
+                  required
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="reg-lname" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
+                  Last Name
+                </label>
+                <input
+                  id="reg-lname"
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Smith"
+                  required
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400"
+                />
+              </div>
             </div>
 
             <div>
@@ -85,8 +133,39 @@ export function RegisterPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="john@example.com"
                 required
-                className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm font-medium text-ink outline-none focus:border-forest-400"
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400"
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="reg-phone" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
+                  Phone Number
+                </label>
+                <input
+                  id="reg-phone"
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+94 77 123 4567"
+                  required
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="reg-dob" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  id="reg-dob"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400"
+                />
+              </div>
             </div>
 
             <div>
@@ -98,14 +177,15 @@ export function RegisterPage() {
                 type="text"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                placeholder="United Kingdom"
-                className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm font-medium text-ink outline-none focus:border-forest-400"
+                placeholder="Sri Lanka / United Kingdom"
+                required
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400"
               />
             </div>
 
             <div>
               <label htmlFor="reg-pass" className="block text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
-                Password
+                Password (min 8 characters)
               </label>
               <input
                 id="reg-pass"
@@ -113,7 +193,9 @@ export function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm font-medium text-ink outline-none focus:border-forest-400"
+                minLength={8}
+                required
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink outline-none focus:border-forest-400"
               />
             </div>
 
@@ -136,4 +218,3 @@ export function RegisterPage() {
 }
 
 export default RegisterPage;
-
