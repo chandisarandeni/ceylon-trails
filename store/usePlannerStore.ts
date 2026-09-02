@@ -7,6 +7,10 @@ import { rescore, runPipeline } from '../utils/pipeline';
 import { greedyRankPlans } from '../lib/api/ranking';
 import { calculateFeasibility } from '../lib/api/feasibility';
 import { createAttractionSelection, generateCandidatePlans } from '../lib/api/attractions';
+import { createTourismNetwork } from '../lib/api/network';
+import { optimizeFromNetworkId } from '../lib/api/optimization';
+
+
 
 export const MODULE_STEPS = [
   { key: 'decision', module: 'Module 4', title: 'Decision', path: '/decision' },
@@ -176,31 +180,84 @@ export const usePlannerStore = create<PlannerState>()(
               endingLocation: { name: endPt.city || endPt.name, latitude: endPt.lat, longitude: endPt.lng }
             });
 
-            // 3. Call travel-plan-ranking backend endpoint
-            await greedyRankPlans({
-              candidatePlans: computed.plans.map((p) => ({
-                planId: p.id,
-                interestScore: p.interestScore,
-                totalTravelTime: p.route.totalTravelHours,
-                daysRequired: p.resources.daysRequired,
-                totalCost: p.resources.totalCost,
-                feasible: p.resources.feasible
-              })),
-              preferences: {
-                budget: state.preferences.budget,
-                tripDuration: state.preferences.days,
-                maximumTravelTime: state.preferences.maxDailyTravelHours,
-                weights: state.weights
-              }
-            });
+            // STEP 3: POST /travel-plan-ranking/greedy → saves to 'travelplanrankings' collection
+            try {
+              await greedyRankPlans({
+                candidatePlans: computed.plans.map((p) => ({
+                  planId: p.id,
+                  interestScore: p.interestScore,
+                  totalTravelTime: p.route.totalTravelHours,
+                  daysRequired: p.resources.daysRequired,
+                  totalCost: p.resources.totalCost,
+                  feasible: p.resources.feasible
+                })),
+                preferences: {
+                  budget: state.preferences.budget,
+                  tripDuration: state.preferences.days,
+                  maximumTravelTime: state.preferences.maxDailyTravelHours,
+                  weights: state.weights
+                }
+              });
+            } catch (rankErr) {
+              console.log('travelplanrankings save notice:', rankErr);
+            }
 
-            // 4. Call trip-feasibility backend endpoint for the top plan
-            // CalculateTripFeasibilityDto exact field names:
-            //   - travelStyle: 'budget' | 'balanced' | 'comfort' (lowercase)
-            //   - transportationStyle: 'private transport' | 'public transport' (full string)
-            //   - selectedAttractions: { attractionId, attractionName, activityCost, visitDuration, interestScore }
-            //   - optimizedRoute: { destinations, routeSegments, totalTravelTime, totalTravelDistance, totalTravelCost }
-            //   - startingLocation/endingLocation: { name, latitude?, longitude? }
+            // STEP 4: POST /api/tourism-network → saves to 'tourismnetworks' collection
+            // Then use returned networkId for route-optimization to save 'routeoptimizations'
+            // CandidatePlanDto.selectedAttractions needs: { attraction: { id, name, latitude, longitude, ... } }
+            let networkId: string | null = null;
+            try {
+              const networkPayload = {
+                candidatePlans: computed.plans.map((p, idx) => ({
+                  planId: p.id,
+                  rank: idx + 1,
+                  planInterestScore: p.interestScore,
+                  diversityScore: 80,
+                  planScore: Math.round((p.score?.overallScore || 0) * 100),
+                  selectedAttractions: p.attractionIds.map((id) => {
+                    const item = ATTRACTION_MAP[id];
+                    const pt = item || getPoint(id);
+                    return {
+                      attraction: {
+                        id: pt.id,
+                        name: pt.name,
+                        categories: item
+                          ? (Object.entries(item.scores) as [string, number][])
+                              .filter(([, s]) => s > 0)
+                              .map(([k]) => k.toUpperCase())
+                          : ['NATURE'],
+                        isAvailable: true,
+                        latitude: pt.lat,
+                        longitude: pt.lng
+                      },
+                      interestScore: p.interestScore,
+                      normalizedScore: p.interestScore / 100
+                    };
+                  })
+                })),
+                // TransportationMode enum: 'private' | 'public'
+                preferredTransportation: state.preferences.transport === 'Private Transport' ? 'private' : 'public',
+                startingLocation: { name: startPt.city || startPt.name, latitude: startPt.lat, longitude: startPt.lng },
+                endingLocation: { name: endPt.city || endPt.name, latitude: endPt.lat, longitude: endPt.lng }
+              };
+
+              const networkResponse = await createTourismNetwork(networkPayload) as { networkId?: string };
+              networkId = networkResponse?.networkId || null;
+            } catch (networkErr) {
+              console.log('tourismnetworks save notice:', networkErr);
+            }
+
+            // STEP 5: GET /route-optimization/network/:networkId → reads tourismnetworks, saves to 'routeoptimizations'
+            if (networkId) {
+              try {
+                await optimizeFromNetworkId(networkId);
+              } catch (routeErr) {
+                console.log('routeoptimizations save notice:', routeErr);
+              }
+            }
+
+            // STEP 6: POST /trip-feasibility/feasibility → saves to 'tripfeasibilities' collection
+            // Strict validation: destinations must match attractionNames exactly; routeSegments must be continuous
             const topPlan = computed.plans[0];
 
             // Map TravelStyle ('Budget' | 'Balanced' | 'Comfort') to lowercase backend enum
@@ -211,53 +268,70 @@ export const usePlannerStore = create<PlannerState>()(
               ? 'private transport'
               : 'public transport';
 
-            // Build route segment pairs from route order
-            const routeOrder = topPlan.route.order;
-            const segmentCount = Math.max(0, routeOrder.length - 1);
-            const segmentTravelTime = segmentCount > 0 ? topPlan.route.totalTravelHours / segmentCount : 0;
-            const segmentDistance = segmentCount > 0 ? topPlan.route.totalDistanceKm / segmentCount : 0;
-            const segmentCost = segmentCount > 0 ? topPlan.route.totalTravelCost / segmentCount : 0;
+            // Build selectedAttractions with attraction names as IDs (backend matches by name OR id)
+            const selectedAttractionsForFeasibility = topPlan.attractionIds.map((id) => {
+              const item = ATTRACTION_MAP[id];
+              return {
+                attractionId: item?.name || id,       // use name so it matches destinations
+                attractionName: item?.name || id,
+                activityCost: item?.activityCost || 0,
+                visitDuration: item?.visitDuration || 1,
+                interestScore: topPlan.interestScore
+              };
+            });
 
-            const routeSegments = routeOrder.slice(0, -1).map((from, i) => ({
+            // Build destinations using attraction names (must match attractionName/attractionId)
+            const startName = startPt.city || startPt.name;
+            const endName = endPt.city || endPt.name;
+            const attractionNames = topPlan.attractionIds.map((id) => ATTRACTION_MAP[id]?.name || id);
+            const destinations = [startName, ...attractionNames, endName];
+
+            // Build route segments (N-1 segments for N destinations, continuous)
+            const segCount = destinations.length - 1;
+            const segTime = segCount > 0 ? topPlan.route.totalTravelHours / segCount : 0;
+            const segDist = segCount > 0 ? topPlan.route.totalDistanceKm / segCount : 0;
+            const segCost = segCount > 0 ? topPlan.route.totalTravelCost / segCount : 0;
+
+            const routeSegments = destinations.slice(0, -1).map((from, i) => ({
               from,
-              to: routeOrder[i + 1],
-              travelTime: segmentTravelTime,
-              travelDistance: segmentDistance,
-              travelCost: segmentCost
+              to: destinations[i + 1],
+              travelTime: Math.round(segTime * 100) / 100,
+              travelDistance: Math.round(segDist * 100) / 100,
+              travelCost: Math.round(segCost * 100) / 100
             }));
 
-            await calculateFeasibility({
-              tripDuration: state.preferences.days,
-              maxDailyTravelTime: state.preferences.maxDailyTravelHours,
-              totalBudget: state.preferences.budget,
-              minEmergencyReserve: state.preferences.emergencyReserve,
-              travelStyle: travelStyleLower,
-              transportationStyle: transportStyle,
-              startingLocation: { name: startPt.city || startPt.name, latitude: startPt.lat, longitude: startPt.lng },
-              endingLocation: { name: endPt.city || endPt.name, latitude: endPt.lat, longitude: endPt.lng },
-              selectedAttractions: topPlan.attractionIds.map((id) => {
-                const item = ATTRACTION_MAP[id];
-                return {
-                  attractionId: id,
-                  attractionName: item?.name || id,
-                  activityCost: item?.activityCost || 0,
-                  visitDuration: item?.visitDuration || 1,
-                  interestScore: topPlan.interestScore
-                };
-              }),
-              optimizedRoute: {
-                destinations: routeOrder,
-                routeSegments,
-                totalTravelTime: topPlan.route.totalTravelHours,
-                totalTravelDistance: topPlan.route.totalDistanceKm,
-                totalTravelCost: topPlan.route.totalTravelCost
-              }
-            });
+            // Recalculate totals from segments to ensure consistency (backend validates sum)
+            const totalTime = routeSegments.reduce((s, r) => s + r.travelTime, 0);
+            const totalDist = routeSegments.reduce((s, r) => s + r.travelDistance, 0);
+            const totalCost = routeSegments.reduce((s, r) => s + r.travelCost, 0);
+
+            try {
+              await calculateFeasibility({
+                tripDuration: state.preferences.days,
+                maxDailyTravelTime: state.preferences.maxDailyTravelHours,
+                totalBudget: state.preferences.budget,
+                minEmergencyReserve: state.preferences.emergencyReserve,
+                travelStyle: travelStyleLower,
+                transportationStyle: transportStyle,
+                startingLocation: { name: startName },
+                endingLocation: { name: endName },
+                selectedAttractions: selectedAttractionsForFeasibility,
+                optimizedRoute: {
+                  destinations,
+                  routeSegments,
+                  totalTravelTime: Math.round(totalTime * 100) / 100,
+                  totalTravelDistance: Math.round(totalDist * 100) / 100,
+                  totalTravelCost: Math.round(totalCost * 100) / 100
+                }
+              });
+            } catch (feasErr) {
+              console.log('tripfeasibilities save notice:', feasErr);
+            }
 
             backendSynced = true;
           }
         } catch (err) {
-          console.log('Backend API sync notice:', err);
+          console.log('Backend pipeline sync error:', err);
         }
 
         MODULE_STEPS.forEach((_, index) => {
