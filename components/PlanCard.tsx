@@ -16,7 +16,7 @@ export function PlanCard({
 }: {
   plan: CandidatePlan;
   isRecommended?: boolean;
-  onViewDetails: () => void;
+  onViewDetails?: () => void;
   showFeasibility?: boolean;
   showOverall?: boolean;
 }) {
@@ -118,11 +118,13 @@ export function PlanCard({
           </p>
         ) : null}
 
-        <div className="mt-auto pt-4">
-          <Button variant="secondary" size="sm" onClick={onViewDetails} className="w-full">
-            View details
-          </Button>
-        </div>
+        {onViewDetails ? (
+          <div className="mt-auto pt-4">
+            <Button variant="secondary" size="sm" onClick={onViewDetails} className="w-full">
+              View details
+            </Button>
+          </div>
+        ) : null}
       </div>
     </article>
   );

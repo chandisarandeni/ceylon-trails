@@ -4,9 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2Icon } from 'lucide-react';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { EmptyPipelineState } from '../../components/EmptyPipelineState';
-import { IOPanel, ModuleHeader, StepNav } from '../../components/ModuleShell';
+import { ModuleHeader, StepNav } from '../../components/ModuleShell';
 import { PlanCard } from '../../components/PlanCard';
-import { PlanDetailModal } from '../../components/PlanDetailModal';
 import { Card, CardBody, CardHeader } from '../../components/ui/Card';
 import { TableWrap, TD, TH } from '../../components/ui/Table';
 import { ProgressBar } from '../../components/ui/Metrics';
@@ -15,7 +14,6 @@ import { PipelineIssueNotice } from '../../components/PipelineIssueNotice';
 
 export function ModuleDecisionPage() {
   const { result, preferences, markCompleted } = usePlannerStore();
-  const [detailId, setDetailId] = useState<string | null>(null);
 
   useEffect(() => {
     if (result) markCompleted('decision');
@@ -69,7 +67,7 @@ export function ModuleDecisionPage() {
         <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {result.plans.map((plan) => (
             <li key={plan.id} className="h-full">
-              <PlanCard plan={plan} onViewDetails={() => setDetailId(plan.id)} />
+              <PlanCard plan={plan} />
             </li>
           ))}
         </ul>
@@ -139,11 +137,6 @@ export function ModuleDecisionPage() {
         backLabel="Edit my preferences"
         nextTo="/network"
         nextLabel="See route connections"
-      />
-
-      <PlanDetailModal
-        plan={result.plans.find((p) => p.id === detailId) ?? null}
-        onClose={() => setDetailId(null)}
       />
     </div>
   );
