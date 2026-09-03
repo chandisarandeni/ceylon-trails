@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --canvas: #F5F7F4;
+    --surface: #FFFFFF;
+    --line: #E3E8E3;
+    --ink: #0D1A14;
+    --ink-muted: #576760;
+    --ink-soft: #8B9A92;
+    --forest-50: #EFF6F2;
+    --forest-100: #D9EBE1;
+    --forest-200: #B0D4C1;
+    --forest-300: #7FB79B;
+    --forest-400: #4E9576;
+    --forest-500: #2E7A5B;
+    --forest-600: #1F6247;
+    --forest-700: #164B37;
+    --forest-800: #0E3527;
+    --forest-900: #082019;
+    --clay-50: #FDF4EC;
+    --clay-100: #FAE7D5;
+    --clay-300: #EFBE93;
+    --clay-500: #D2762F;
+    --clay-600: #B05C1F;
+    --gold-50: #FDF8E7;
+    --gold-100: #F8EFC6;
+    --gold-500: #B99219;
+    --alert-50: #FCEEEB;
+    --alert-100: #F8DAD3;
+    --alert-500: #C0412C;
+    --alert-600: #9C3222;
   }
 }
 
+@theme {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-soft: var(--ink-soft);
+  --color-forest-50: var(--forest-50);
+  --color-forest-100: var(--forest-100);
+  --color-forest-200: var(--forest-200);
+  --color-forest-300: var(--forest-300);
+  --color-forest-400: var(--forest-400);
+  --color-forest-500: var(--forest-500);
+  --color-forest-600: var(--forest-600);
+  --color-forest-700: var(--forest-700);
+  --color-forest-800: var(--forest-800);
+  --color-forest-900: var(--forest-900);
+  --color-clay-50: var(--clay-50);
+  --color-clay-100: var(--clay-100);
+  --color-clay-300: var(--clay-300);
+  --color-clay-500: var(--clay-500);
+  --color-clay-600: var(--clay-600);
+  --color-gold-50: var(--gold-50);
+  --color-gold-100: var(--gold-100);
+  --color-gold-500: var(--gold-500);
+  --color-alert-50: var(--alert-50);
+  --color-alert-100: var(--alert-100);
+  --color-alert-500: var(--alert-500);
+  --color-alert-600: var(--alert-600);
+}
+
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  background-color: #F5F7F4;
+  color: #0D1A14;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.map-grid {
+  background-image: linear-gradient(rgba(22, 75, 55, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 75, 55, 0.055) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+*:focus-visible {
+  outline: 2px solid #1F6247;
+  outline-offset: 2px;
 }
