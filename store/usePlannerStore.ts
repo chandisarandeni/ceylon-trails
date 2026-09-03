@@ -102,13 +102,14 @@ export const usePlannerStore = create<PlannerState>()(
                 weight: interestLevelToWeight(String(level))
               }));
 
-            // Map travelStyle to uppercase enum string (BALANCED, RELAXED, ADVENTURE)
+            // Map travelStyle ('Budget' | 'Balanced' | 'Comfort') to uppercase enum string (RELAXED, BALANCED, ADVENTURE)
             const rawStyle = state.preferences.travelStyle.toUpperCase();
-            const travelStyleUpper = rawStyle.includes('BALANCED')
-              ? 'BALANCED'
-              : rawStyle.includes('RELAXED')
-              ? 'RELAXED'
-              : 'ADVENTURE';
+            const travelStyleUpper =
+              rawStyle.includes('BUDGET') || rawStyle.includes('RELAXED')
+                ? 'RELAXED'
+                : rawStyle.includes('COMFORT') || rawStyle.includes('ADVENTURE')
+                ? 'ADVENTURE'
+                : 'BALANCED';
 
             const startPt = getPoint(state.preferences.startHubId);
             const endPt = getPoint(state.preferences.endHubId);
@@ -157,10 +158,15 @@ export const usePlannerStore = create<PlannerState>()(
 
             // STEP 3: POST /travel-plan-ranking/greedy → saves to 'travelplanrankings' collection
             try {
+              // Sort plans by frontend MCDM overallScore so the backend greedy ranking selects the exact same best plan as highlighted in the UI
+              const sortedByMcdm = [...computed.plans].sort(
+                (a, b) => (b.score?.overallScore || 0) - (a.score?.overallScore || 0)
+              );
+
               await greedyRankPlans({
-                candidatePlans: computed.plans.map((p) => ({
+                candidatePlans: sortedByMcdm.map((p) => ({
                   planId: p.id,
-                  interestScore: p.interestScore,
+                  interestScore: Math.round((p.score?.overallScore || 0) * 100),
                   totalTravelTime: p.route.totalTravelHours,
                   daysRequired: p.resources.daysRequired,
                   totalCost: p.resources.totalCost,
@@ -169,7 +175,7 @@ export const usePlannerStore = create<PlannerState>()(
                 preferences: {
                   budget: state.preferences.budget,
                   tripDuration: state.preferences.days,
-                  maximumTravelTime: state.preferences.maxDailyTravelHours,
+                  maximumTravelTime: state.preferences.maxDailyTravelHours * state.preferences.days,
                   weights: state.weights
                 }
               });
@@ -231,10 +237,7 @@ export const usePlannerStore = create<PlannerState>()(
               }
             }
 
-            // STEP 6: POST /trip-feasibility/feasibility → saves to 'tripfeasibilities' collection
-            // Strict validation: destinations must match attractionNames exactly; routeSegments must be continuous
-            const topPlan = computed.plans[0];
-
+            // STEP 6: POST /trip-feasibility/feasibility → saves all candidate plans to 'tripfeasibilities' collection
             // Map TravelStyle ('Budget' | 'Balanced' | 'Comfort') to lowercase backend enum
             const travelStyleLower = state.preferences.travelStyle.toLowerCase() as 'budget' | 'balanced' | 'comfort';
 
@@ -243,64 +246,82 @@ export const usePlannerStore = create<PlannerState>()(
               ? 'private transport'
               : 'public transport';
 
-            // Build selectedAttractions with attraction names as IDs (backend matches by name OR id)
-            const selectedAttractionsForFeasibility = topPlan.attractionIds.map((id) => {
-              const item = ATTRACTION_MAP[id];
-              return {
-                attractionId: item?.name || id,       // use name so it matches destinations
-                attractionName: item?.name || id,
-                activityCost: item?.activityCost || 0,
-                visitDuration: item?.visitDuration || 1,
-                interestScore: topPlan.interestScore
-              };
-            });
-
-            // Build destinations using attraction names (must match attractionName/attractionId)
             const startName = startPt.city || startPt.name;
             const endName = endPt.city || endPt.name;
-            const attractionNames = topPlan.attractionIds.map((id) => ATTRACTION_MAP[id]?.name || id);
-            const destinations = [startName, ...attractionNames, endName];
 
-            // Build route segments (N-1 segments for N destinations, continuous)
-            const segCount = destinations.length - 1;
-            const segTime = segCount > 0 ? topPlan.route.totalTravelHours / segCount : 0;
-            const segDist = segCount > 0 ? topPlan.route.totalDistanceKm / segCount : 0;
-            const segCost = segCount > 0 ? topPlan.route.totalTravelCost / segCount : 0;
+            // Loop through ALL candidate plans so feasibility for all 5 plans is saved to MongoDB
+            for (const plan of computed.plans) {
+              try {
+                const selectedAttractionsForFeasibility = plan.attractionIds.map((id) => {
+                  const item = ATTRACTION_MAP[id];
+                  return {
+                    attractionId: item?.name || id,
+                    attractionName: item?.name || id,
+                    activityCost: item?.activityCost || 0,
+                    visitDuration: item?.visitDuration || 1,
+                    interestScore: plan.interestScore
+                  };
+                });
 
-            const routeSegments = destinations.slice(0, -1).map((from, i) => ({
-              from,
-              to: destinations[i + 1],
-              travelTime: Math.round(segTime * 100) / 100,
-              travelDistance: Math.round(segDist * 100) / 100,
-              travelCost: Math.round(segCost * 100) / 100
-            }));
+                const attractionNames = plan.attractionIds.map((id) => ATTRACTION_MAP[id]?.name || id);
+                const destinations = [startName, ...attractionNames, endName];
 
-            // Recalculate totals from segments to ensure consistency (backend validates sum)
-            const totalTime = routeSegments.reduce((s, r) => s + r.travelTime, 0);
-            const totalDist = routeSegments.reduce((s, r) => s + r.travelDistance, 0);
-            const totalCost = routeSegments.reduce((s, r) => s + r.travelCost, 0);
+                const totalTravelTime = Math.round(plan.route.totalTravelHours * 100) / 100;
+                const totalTravelDistance = Math.round(plan.route.totalDistanceKm * 100) / 100;
+                const totalTravelCost = Math.round(plan.route.totalTravelCost * 100) / 100;
 
-            try {
-              await calculateFeasibility({
-                tripDuration: state.preferences.days,
-                maxDailyTravelTime: state.preferences.maxDailyTravelHours,
-                totalBudget: state.preferences.budget,
-                minEmergencyReserve: state.preferences.emergencyReserve,
-                travelStyle: travelStyleLower,
-                transportationStyle: transportStyle,
-                startingLocation: { name: startName },
-                endingLocation: { name: endName },
-                selectedAttractions: selectedAttractionsForFeasibility,
-                optimizedRoute: {
-                  destinations,
-                  routeSegments,
-                  totalTravelTime: Math.round(totalTime * 100) / 100,
-                  totalTravelDistance: Math.round(totalDist * 100) / 100,
-                  totalTravelCost: Math.round(totalCost * 100) / 100
+                const segCount = destinations.length - 1;
+                const routeSegments = [];
+                let accTime = 0;
+                let accDist = 0;
+                let accCost = 0;
+
+                for (let i = 0; i < segCount; i++) {
+                  const isLast = i === segCount - 1;
+                  const t = isLast
+                    ? Math.round((totalTravelTime - accTime) * 100) / 100
+                    : Math.round((totalTravelTime / segCount) * 100) / 100;
+                  const d = isLast
+                    ? Math.round((totalTravelDistance - accDist) * 100) / 100
+                    : Math.round((totalTravelDistance / segCount) * 100) / 100;
+                  const c = isLast
+                    ? Math.round((totalTravelCost - accCost) * 100) / 100
+                    : Math.round((totalTravelCost / segCount) * 100) / 100;
+
+                  accTime += t;
+                  accDist += d;
+                  accCost += c;
+
+                  routeSegments.push({
+                    from: destinations[i],
+                    to: destinations[i + 1],
+                    travelTime: Math.max(0, t),
+                    travelDistance: Math.max(0, d),
+                    travelCost: Math.max(0, c)
+                  });
                 }
-              });
-            } catch (feasErr) {
-              console.log('tripfeasibilities save notice:', feasErr);
+
+                await calculateFeasibility({
+                  tripDuration: state.preferences.days,
+                  maxDailyTravelTime: state.preferences.maxDailyTravelHours,
+                  totalBudget: state.preferences.budget,
+                  minEmergencyReserve: state.preferences.emergencyReserve,
+                  travelStyle: travelStyleLower,
+                  transportationStyle: transportStyle,
+                  startingLocation: { name: startName },
+                  endingLocation: { name: endName },
+                  selectedAttractions: selectedAttractionsForFeasibility,
+                  optimizedRoute: {
+                    destinations,
+                    routeSegments,
+                    totalTravelTime,
+                    totalTravelDistance,
+                    totalTravelCost
+                  }
+                });
+              } catch (feasErr) {
+                console.log(`tripfeasibilities save notice for plan ${plan.id}:`, feasErr);
+              }
             }
 
             backendSynced = true;
