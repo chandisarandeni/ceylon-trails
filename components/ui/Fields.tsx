@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronDownIcon, AlertCircleIcon } from 'lucide-react';
 
 export function FieldLabel({
   label,
@@ -24,44 +25,67 @@ export function NumberField({
   label,
   hint,
   value,
+  placeholder,
   min,
   max,
   step = 1,
   prefix,
   suffix,
+  error,
   onChange
 }: {
   id: string;
   label: string;
   hint?: string;
   value: number;
-  min: number;
-  max: number;
+  placeholder?: string;
+  min?: number;
+  max?: number;
   step?: number;
   prefix?: string;
   suffix?: string;
+  error?: string;
   onChange: (value: number) => void;
 }) {
   return (
     <div>
       <FieldLabel label={label} hint={hint} htmlFor={id} />
-      <div className="flex items-center rounded-xl border border-line bg-surface focus-within:border-forest-400">
+      <div
+        className={`flex items-center rounded-xl border transition-colors ${
+          error
+            ? 'border-red-500 bg-red-50/30 ring-2 ring-red-100'
+            : 'border-line bg-surface focus-within:border-forest-400'
+        }`}
+      >
         {prefix ? <span className="pl-3 font-mono text-xs text-ink-soft">{prefix}</span> : null}
         <input
           id={id}
           type="number"
-          value={value}
+          value={value === 0 ? '' : value}
+          placeholder={placeholder}
           min={min}
           max={max}
           step={step}
           onChange={(e) => {
-            const next = Number(e.target.value);
-            if (Number.isFinite(next)) onChange(Math.min(max, Math.max(min, next)));
+            const raw = e.target.value;
+            if (raw === '') {
+              onChange(0);
+            } else {
+              const next = Number(raw);
+              if (Number.isFinite(next)) onChange(next);
+            }
           }}
-          className="tabular w-full bg-transparent px-3 py-2.5 text-sm font-medium text-ink outline-none"
+          className="tabular w-full bg-transparent px-3 py-2.5 text-sm font-medium text-ink outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          onWheel={(e) => (e.target as HTMLElement).blur()}
         />
         {suffix ? <span className="pr-3 text-xs text-ink-soft">{suffix}</span> : null}
       </div>
+      {error ? (
+        <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-red-600">
+          <AlertCircleIcon className="h-3.5 w-3.5 shrink-0" />
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -72,6 +96,8 @@ export function SelectField<T extends string>({
   hint,
   value,
   options,
+  icon,
+  error,
   onChange
 }: {
   id: string;
@@ -79,23 +105,43 @@ export function SelectField<T extends string>({
   hint?: string;
   value: T;
   options: { value: T; label: string }[];
+  icon?: React.ReactNode;
+  error?: string;
   onChange: (value: T) => void;
 }) {
   return (
     <div>
       <FieldLabel label={label} hint={hint} htmlFor={id} />
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value as T)}
-        className="w-full appearance-none rounded-xl border border-line bg-surface px-3 py-2.5 text-sm font-medium text-ink outline-none focus:border-forest-400"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div className="relative flex items-center">
+        {icon ? (
+          <span className="pointer-events-none absolute left-3 text-forest-600">
+            {icon}
+          </span>
+        ) : null}
+        <select
+          id={id}
+          value={value}
+          onChange={(e) => onChange(e.target.value as T)}
+          className={`w-full appearance-none rounded-xl border py-2.5 text-sm font-medium text-ink outline-none transition-colors focus:border-forest-400 cursor-pointer ${
+            error
+              ? 'border-red-500 bg-red-50/30 ring-2 ring-red-100'
+              : 'border-line bg-surface'
+          } ${icon ? 'pl-9 pr-9' : 'px-3 pr-9'}`}
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDownIcon className="pointer-events-none absolute right-3 h-4 w-4 text-ink-muted" />
+      </div>
+      {error ? (
+        <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-red-600">
+          <AlertCircleIcon className="h-3.5 w-3.5 shrink-0" />
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

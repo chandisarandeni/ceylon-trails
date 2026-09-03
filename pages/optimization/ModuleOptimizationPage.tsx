@@ -31,52 +31,23 @@ export function ModuleOptimizationPage() {
   return (
     <div>
       <ModuleHeader
-        moduleTag="MODULE 5"
-        pipelinePosition="Stage 5 of 5 • final decision module"
-        title="Overall Travel Optimization (MCDM)"
-        purpose="Which of all candidate plans is the single best recommendation? Module 5 runs multi-criteria decision making over candidate plans, excluding infeasible plans and combining interest match, budget efficiency, travel time and time fit."
-        algorithms={[
-          'Feasibility Hard Filtering',
-          'Min-Max Normalisation',
-          'Weighted Sum MCDM Model',
-          'Interactive Weight Sensitivity'
-        ]}
+        moduleTag="STEP 5"
+        title="Best Trip Recommendation"
+        purpose="Based on your interests, budget and travel time, we’ve found the single best trip option for you from all the plans analysed."
       />
 
       {result.issue?.kind === 'budget' || result.issue?.kind === 'time' ? (
         <PipelineIssueNotice issue={result.issue} />
       ) : null}
 
-      <IOPanel
-        input={[
-          { label: 'Candidate plans', value: `${result.plans.length}` },
-          { label: 'Feasible plans', value: `${result.plans.filter((p) => p.resources.feasible).length}` },
-          { label: 'Raw weights', value: `${weights.interest} / ${weights.budget} / ${weights.travel} / ${weights.time}` },
-          { label: 'User budget', value: formatRs(preferences.budget) }
-        ]}
-        processing={[
-          'Exclude plans that failed Module 2 feasibility checks (budget, time or daily travel limits).',
-          'Min-max normalise the remaining plans across four criteria (higher is better for interest/budget, lower for travel/time gap).',
-          'Apply the multi-criteria weighted sum model to produce a final overall score out of 100%.',
-          'Select the winning plan and generate comparative rank notes for every candidate.'
-        ]}
-        output={[
-          { label: 'Recommended plan', value: recommended ? recommended.label : 'None (all excluded)' },
-          {
-            label: 'Top score',
-            value: recommended?.score ? formatPct(recommended.score.overallScore) : '–'
-          },
-          { label: 'Strategy', value: recommended?.strategy ?? '–' }
-        ]}
-        handoff="The winning plan is formatted into the day-by-day timetable presented on the Final Itinerary screen."
-      />
+
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <Card>
           <CardHeader
-            eyebrow="SENSITIVITY ANALYSIS"
-            title="MCDM Criterion Weights"
-            subtitle="Adjust sliders to change the decision priority without re-running routing or network math."
+            eyebrow="PERSONALISE YOUR PRIORITIES"
+            title="Adjust what matters most to you"
+            subtitle="Use the sliders to fine-tune which factors matter most for your ideal trip — no need to re-run anything."
           />
           <CardBody className="space-y-4">
             <RangeField
@@ -120,13 +91,9 @@ export function ModuleOptimizationPage() {
               onChange={(time) => setWeights({ ...weights, time })}
             />
             <Button variant="secondary" size="sm" onClick={() => setWeights(DEFAULT_WEIGHTS)}>
-              Reset to 40 / 25 / 20 / 15
+              Reset to defaults
             </Button>
-            <p className="rounded-xl bg-canvas p-3 font-mono text-[11px] leading-relaxed text-ink-muted">
-              score = {normalised.interest.toFixed(2)}×interest +{' '}
-              {normalised.budget.toFixed(2)}×budget + {normalised.travel.toFixed(2)}×travel +{' '}
-              {normalised.time.toFixed(2)}×time
-            </p>
+
           </CardBody>
         </Card>
 
@@ -160,9 +127,9 @@ export function ModuleOptimizationPage() {
 
           <Card>
             <CardHeader
-              eyebrow="DECISION TABLE"
-              title="Complete plan comparison"
-              subtitle="Infeasible plans are excluded before scoring and can never be recommended."
+              eyebrow="ALL TRIP OPTIONS"
+              title="All trip options compared"
+              subtitle="Plans that exceed your budget or trip duration are marked as not available."
             />
             <CardBody className="px-0 py-0">
               <TableWrap>
@@ -238,19 +205,19 @@ export function ModuleOptimizationPage() {
 
           <Card>
             <CardHeader
-              eyebrow="CRITERIA BREAKDOWN"
-              title="Normalised criterion scores per feasible plan"
+              eyebrow="SCORE BREAKDOWN"
+              title="How each trip option scored"
             />
             <CardBody className="px-0 py-0">
               <TableWrap>
                 <thead>
                   <tr>
                     <TH>Plan</TH>
-                    <TH align="right">Interest</TH>
-                    <TH align="right">Budget eff.</TH>
-                    <TH align="right">Travel eff.</TH>
-                    <TH align="right">Time fit</TH>
-                    <TH align="right">Weighted total</TH>
+                    <TH align="right">Interest match</TH>
+                    <TH align="right">Budget efficiency</TH>
+                    <TH align="right">Travel efficiency</TH>
+                    <TH align="right">Time suitability</TH>
+                    <TH align="right">Overall score</TH>
                   </tr>
                 </thead>
                 <tbody>
@@ -287,10 +254,9 @@ export function ModuleOptimizationPage() {
 
       <StepNav
         backTo="/resources"
-        backLabel="Back to Module 2"
+        backLabel="Back to budget"
         nextTo="/itinerary"
-        nextLabel="View Final Itinerary"
-        note="Next: the personalised plan the tourist actually receives."
+        nextLabel="View my itinerary"
       />
     </div>
   );

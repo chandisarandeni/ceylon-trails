@@ -31,59 +31,31 @@ export function ModuleNetworkPage() {
   return (
     <div>
       <ModuleHeader
-        moduleTag="MODULE 3"
-        pipelinePosition="Stage 2 of 5"
-        title="Tourism Network Analysis"
-        purpose="How are these destinations connected? Converts candidate attraction sets into weighted, undirected graphs so routing algorithms can reason about distances, travel times, transport modes and node centrality."
-        algorithms={[
-          'Weighted Graph',
-          'Adjacency List',
-          'k-Nearest edges + Union-Find connectivity',
-          'BFS / DFS traversal',
-          'Node degree analysis'
-        ]}
+        moduleTag="STEP 2"
+        title="Route Connections"
+        purpose="Here's how your selected destinations connect to each other — showing travel distances, times, and transport options between every stop on your trip."
       />
 
-      <IOPanel
-        input={[
-          { label: 'Candidate plans', value: `${result.plans.length}` },
-          { label: 'Nodes in this plan', value: `${network.nodeIds.length}` },
-          { label: 'Transport mode', value: preferences.transport },
-          { label: 'Start / end', value: `${getPoint(preferences.startHubId).city} → ${getPoint(preferences.endHubId).city}` }
-        ]}
-        processing={[
-          'Create one node per exact attraction, plus the start and end hubs.',
-          'Add k-nearest-neighbour edges, then union-find repair passes until the graph is fully connected.',
-          'Weight every edge with road distance, travel time and transport cost for the chosen mode.',
-          'Run BFS and DFS from the start hub and compute node degrees to find hubs and remote links.'
-        ]}
-        output={[
-          { label: 'Connections', value: `${network.edges.length}` },
-          { label: 'Most connected', value: pointName(network.mostConnectedId) },
-          { label: 'Avg edge distance', value: formatKm(network.avgDistanceKm) },
-          { label: 'Components', value: `${network.componentCount} (connected)` }
-        ]}
-        handoff="The weighted adjacency list for each plan is passed to Module 1, which searches it for the best visiting order."
-      />
+
 
       <div className="mt-6">
         <PlanSelector
           plans={result.plans}
           activePlanId={plan.id}
           onSelect={setActivePlanId}
-          label="Switch candidate plan network"
+          label="View connections for a trip option"
         />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card>
           <CardHeader
-            eyebrow={`${plan.label} NETWORK`}
-            title="Weighted tourism graph"
-            subtitle="Node labels show degree. Click any connection line to inspect its weights."
+            eyebrow={`${plan.label} DESTINATIONS`}
+            title="Destination connections map"
+            subtitle="Shows all destinations and how they are connected. Click any line to see travel details."
             right={
               <Badge tone="neutral" mono>
-                {network.nodeIds.length} nodes • {network.edges.length} edges
+                {network.nodeIds.length} stops • {network.edges.length} connections
               </Badge>
             }
           />
@@ -95,15 +67,14 @@ export function ModuleNetworkPage() {
             />
             <p className="mt-3 flex items-start gap-1.5 text-xs text-ink-muted">
               <InfoIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-              Connectivity is network information only – a highly connected attraction is not
-              automatically the best destination.
+              A highly connected destination makes a great base — but isn't automatically the best stop for your trip.
             </p>
           </CardBody>
         </Card>
 
         <div className="space-y-4">
           <Card>
-            <CardHeader eyebrow="EDGE INSPECTOR" title="Connection details" />
+            <CardHeader eyebrow="TRAVEL DETAILS" title="Connection details" />
             <CardBody>
               {selectedEdge ? (
                 <dl className="space-y-2.5 text-sm">
@@ -131,15 +102,15 @@ export function ModuleNetworkPage() {
           </Card>
 
           <div className="grid grid-cols-2 gap-3">
-            <StatTile label="Nodes" value={network.nodeIds.length} />
+            <StatTile label="Destinations" value={network.nodeIds.length} />
             <StatTile label="Connections" value={network.edges.length} />
             <StatTile
               label="Avg distance"
               value={formatKm(network.avgDistanceKm)}
-              hint="Across all edges"
+              hint="Between stops"
             />
             <StatTile
-              label="Max degree"
+              label="Most central"
               value={network.degrees[network.mostConnectedId] ?? 0}
               hint={pointName(network.mostConnectedId)}
               tone="accent"
@@ -147,11 +118,11 @@ export function ModuleNetworkPage() {
           </div>
 
           <Card>
-            <CardHeader eyebrow="TRAVERSALS" title="Graph exploration from start hub" />
+            <CardHeader eyebrow="VISIT ORDER" title="Suggested exploration order from your starting point" />
             <CardBody className="space-y-3 text-sm">
               <div>
                 <p className="flex items-center gap-1.5 font-medium text-ink">
-                  <GitBranchIcon className="h-3.5 w-3.5 text-forest-600" aria-hidden /> BFS order
+                  <GitBranchIcon className="h-3.5 w-3.5 text-forest-600" aria-hidden /> Breadth-first order
                 </p>
                 <p className="mt-1 font-mono text-xs text-ink-muted">
                   {network.bfsOrder.map((id) => getPoint(id).city).join(' → ')}
@@ -159,7 +130,7 @@ export function ModuleNetworkPage() {
               </div>
               <div>
                 <p className="flex items-center gap-1.5 font-medium text-ink">
-                  <GitBranchIcon className="h-3.5 w-3.5 text-clay-500" aria-hidden /> DFS order
+                  <GitBranchIcon className="h-3.5 w-3.5 text-clay-500" aria-hidden /> Depth-first order
                 </p>
                 <p className="mt-1 font-mono text-xs text-ink-muted">
                   {network.dfsOrder.map((id) => getPoint(id).city).join(' → ')}
@@ -172,9 +143,9 @@ export function ModuleNetworkPage() {
 
       <Card className="mt-6">
         <CardHeader
-          eyebrow="ADJACENCY LIST"
-          title="Edge weights passed downstream"
-          subtitle="Every connection carries distance, travel time, transport type and cost."
+          eyebrow="CONNECTIONS TABLE"
+          title="All travel connections between destinations"
+          subtitle="Every connection shows distance, travel time, transport type and estimated cost."
         />
         <CardBody className="px-0 py-0">
           <TableWrap>
@@ -225,10 +196,9 @@ export function ModuleNetworkPage() {
 
       <StepNav
         backTo="/decision"
-        backLabel="Back to Module 4"
+        backLabel="Back to trip options"
         nextTo="/route"
-        nextLabel="Continue to Route Optimization"
-        note="Next: Module 1 finds the best visiting order inside each plan."
+        nextLabel="See optimised route"
       />
     </div>
   );

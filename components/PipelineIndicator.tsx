@@ -13,7 +13,7 @@ export function PipelineIndicator() {
 
   return (
     <nav
-      aria-label="Five-module pipeline progress"
+      aria-label="Trip planning progress"
       className="border-b border-line bg-surface/80 backdrop-blur"
     >
       <ol className="mx-auto flex max-w-7xl items-stretch gap-1 overflow-x-auto px-4 py-2 sm:px-6">
@@ -51,13 +51,6 @@ export function PipelineIndicator() {
                 )}
               </span>
               <span className="whitespace-nowrap font-medium">{step.title}</span>
-              <span
-                className={`hidden font-mono text-[10px] sm:inline ${
-                  isActive ? 'text-white/70' : 'text-ink-soft'
-                }`}
-              >
-                {step.module}
-              </span>
             </span>
           );
 

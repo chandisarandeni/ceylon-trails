@@ -29,57 +29,29 @@ export function ModuleRoutePage() {
   return (
     <div>
       <ModuleHeader
-        moduleTag="MODULE 1"
-        pipelinePosition="Stage 3 of 5 • after Module 3"
-        title="Route Optimization"
-        purpose="For each candidate destination plan, what is the best order in which to visit the attractions? Module 1 works strictly inside a single plan – it never compares one plan against another."
-        algorithms={[
-          'Dijkstra (priority queue)',
-          'TSP-style optimisation',
-          'Nearest Neighbour heuristic',
-          '2-opt improvement'
-        ]}
+        moduleTag="STEP 3"
+        title="Best Route for Each Trip Option"
+        purpose="We've calculated the most efficient visiting order for each of your trip options — minimising travel time and distance so you spend more time enjoying Sri Lanka."
       />
 
-      <IOPanel
-        input={[
-          { label: 'Weighted graphs', value: `${result.plans.length} (one per plan)` },
-          { label: 'Start', value: getPoint(preferences.startHubId).name },
-          { label: 'End', value: getPoint(preferences.endHubId).name },
-          { label: 'Transport', value: preferences.transport },
-          { label: 'Daily travel cap', value: `${preferences.maxDailyTravelHours}h` }
-        ]}
-        processing={[
-          'Run Dijkstra from every node over the adjacency list to build an all-pairs shortest-path matrix.',
-          'Construct a starting tour with the Nearest Neighbour heuristic, pinning the start and end hubs.',
-          'Apply 2-opt segment reversals until no shorter tour is found.',
-          'Score each candidate order on total distance, travel time and transport cost.'
-        ]}
-        output={[
-          { label: 'Best routes', value: `${result.plans.length}` },
-          { label: 'This plan distance', value: formatKm(plan.route.totalDistanceKm) },
-          { label: 'This plan travel time', value: formatHours(plan.route.totalTravelHours) },
-          { label: 'This plan transport cost', value: formatRs(plan.route.totalTravelCost) }
-        ]}
-        handoff="One best route per candidate plan – with distance, time and transport cost – is passed to Module 2 for resource allocation."
-      />
+
 
       <Card className="mt-6">
         <CardHeader
-          eyebrow="OUTPUT SUMMARY"
-          title="Best route per candidate plan"
-          subtitle="Module 5 will later use these totals; Module 1 makes no plan-level choice."
+          eyebrow="ROUTE SUMMARY"
+          title="Best visiting order per trip option"
+          subtitle="Comparing the travel time and cost for each trip option to help you choose."
         />
         <CardBody className="px-0 py-0">
           <TableWrap>
             <thead>
               <tr>
                 <TH>Plan</TH>
-                <TH>Best route</TH>
+                <TH>Destinations order</TH>
                 <TH align="right">Distance</TH>
                 <TH align="right">Travel time</TH>
                 <TH align="right">Travel cost</TH>
-                <TH>Method</TH>
+                <TH>Route type</TH>
               </tr>
             </thead>
             <tbody>
@@ -119,7 +91,7 @@ export function ModuleRoutePage() {
           plans={result.plans}
           activePlanId={plan.id}
           onSelect={setActivePlanId}
-          label="Inspect route optimisation for a plan"
+          label="Explore route details for a trip option"
         />
       </div>
 
@@ -127,7 +99,7 @@ export function ModuleRoutePage() {
         <Card>
           <CardHeader
             eyebrow={`${plan.label} BEST ROUTE`}
-            title="Optimised visiting order"
+            title="Recommended visiting order"
             right={<Badge tone="forest">{plan.route.label}</Badge>}
           />
           <CardBody>
@@ -143,14 +115,14 @@ export function ModuleRoutePage() {
         <div className="space-y-4">
           <Card>
             <CardHeader
-              eyebrow="CANDIDATE ORDERS"
-              title="Visiting orders evaluated inside this plan"
-              subtitle="The shortest total distance wins; ties fall back to the earlier method."
+              eyebrow="ROUTE OPTIONS COMPARED"
+              title="Route options compared"
+              subtitle="The shortest and most efficient route is selected for your trip."
               right={
                 plan.route.improvementKm > 0 ? (
                   <Badge tone="clay">
                     <TrendingDownIcon className="h-3 w-3" aria-hidden />
-                    2-opt saved {formatKm(plan.route.improvementKm)}
+                    Saved {formatKm(plan.route.improvementKm)}
                   </Badge>
                 ) : null
               }
@@ -199,9 +171,9 @@ export function ModuleRoutePage() {
 
           <Card>
             <CardHeader
-              eyebrow="ROUTE ON NETWORK"
-              title="Selected path over the Module 3 graph"
-              subtitle="Solid dark edges are the chosen tour; dashed edges were available but unused."
+              eyebrow="MAP VIEW"
+              title="Your trip route on the map"
+              subtitle="The highlighted path shows your planned journey. Dashed lines are available but not selected connections."
             />
             <CardBody>
               <NetworkGraph
@@ -217,10 +189,9 @@ export function ModuleRoutePage() {
 
       <StepNav
         backTo="/network"
-        backLabel="Back to Module 3"
+        backLabel="Back to connections"
         nextTo="/resources"
-        nextLabel="Continue to Resource Allocation"
-        note="Next: Module 2 tests each route against budget and time resources."
+        nextLabel="See budget breakdown"
       />
     </div>
   );

@@ -30,52 +30,20 @@ export function ModuleDecisionPage() {
   return (
     <div>
       <ModuleHeader
-        moduleTag="MODULE 4"
-        pipelinePosition="Stage 1 of 5 • first intelligent module"
-        title="Intelligent Decision & Destination Recommendation"
-        purpose="Which groups of exact tourist attractions are suitable for this tourist? Attractions are scored against weighted interests, ranked with a priority queue, then assembled into several distinct candidate plans."
-        algorithms={[
-          'Weighted Sum Scoring',
-          'Priority Queue ranking',
-          'Multi-strategy plan assembly'
-        ]}
+        moduleTag="STEP 1"
+        title="Destination Matching"
+        purpose="Based on your interests and preferences, we've identified the best Sri Lanka attractions for you and grouped them into multiple trip options to choose from."
       />
 
       {result.issue?.kind === 'interest' ? <PipelineIssueNotice issue={result.issue} /> : null}
 
-      <IOPanel
-        input={[
-          { label: 'Interests', value: activeInterests },
-          { label: 'Optional', value: preferences.optionalInterests.join(', ') || '–' },
-          { label: 'Budget', value: formatRs(preferences.budget) },
-          { label: 'Duration', value: `${preferences.days} days` },
-          { label: 'Attraction database', value: `${result.rankedAttractions.length} records` }
-        ]}
-        processing={[
-          'Normalise interest levels (Low 0.15 / Medium 0.5 / High 1.0) into weights that sum to 1.',
-          'Score each attraction: I_i (weight * score/5), blended with popularity and duration suitability.',
-          'Push all attractions into a priority queue and pop them in descending fit order.',
-          'Assemble 5 candidate plans, each optimising a different trade-off (interest, value, geography, coverage, popularity).'
-        ]}
-        output={[
-          { label: 'Candidate plans', value: `${result.plans.length}` },
-          {
-            label: 'Sites per plan',
-            value: `${result.plans[0]?.attractionIds.length ?? 0}`
-          },
-          {
-            label: 'Best preliminary interest',
-            value: `${Math.max(...result.plans.map((p) => p.interestScore))}%`
-          }
-        ]}
-        handoff="Exact attraction sets are passed to Module 3, which turns each set into a weighted tourism graph."
-      />
+
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {[
-          'User preferences analyzed',
-          'Attractions scored & ranked',
-          `${result.plans.length} candidate plans generated`
+          'Your interests analysed',
+          'Best attractions identified',
+          `${result.plans.length} trip options ready`
         ].map((status) => (
           <p
             key={status}
@@ -91,10 +59,10 @@ export function ModuleDecisionPage() {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 id="candidates-heading" className="text-xl font-semibold tracking-tight text-ink">
-              {result.plans.length} candidate travel plans generated
+              {result.plans.length} personalised trip options for you
             </h2>
             <p className="mt-1 text-sm text-ink-muted">
-              These are candidate destination sets – not routes and not final answers.
+              Each option features a unique set of destinations selected to match your interests. Browse and compare them below.
             </p>
           </div>
         </div>
@@ -109,9 +77,9 @@ export function ModuleDecisionPage() {
 
       <Card className="mt-8">
         <CardHeader
-          eyebrow="RANKING DETAIL"
-          title="Attraction scoring table"
-          subtitle="Priority-queue output over the full attraction database, highest fit first."
+          eyebrow="TOP ATTRACTIONS FOR YOU"
+          title="Best matched attractions"
+          subtitle="Ranked by how well they match your personal interests and travel preferences."
         />
         <CardBody className="px-0 py-0">
           <TableWrap>
@@ -168,10 +136,9 @@ export function ModuleDecisionPage() {
 
       <StepNav
         backTo="/planner"
-        backLabel="Back to input"
+        backLabel="Edit my preferences"
         nextTo="/network"
-        nextLabel="Continue to Network Analysis"
-        note="Next: Module 3 builds a weighted graph for each candidate plan."
+        nextLabel="See route connections"
       />
 
       <PlanDetailModal

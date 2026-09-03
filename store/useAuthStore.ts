@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '../types/tourism';
 import { loginUser as loginApi, registerUser as registerApi, RegisterUserDto, LoginUserDto } from '../lib/api/users';
+import { usePlannerStore } from './usePlannerStore';
 
 interface AuthState {
   user: User | null;
@@ -41,7 +42,10 @@ export const useAuthStore = create<AuthState>()(
           throw err;
         }
       },
-      logout: () => set({ user: null }),
+      logout: () => {
+        usePlannerStore.getState().reset();
+        set({ user: null });
+      },
       setUser: (user) => set({ user })
     }),
     {

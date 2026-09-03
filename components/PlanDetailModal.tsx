@@ -51,7 +51,7 @@ export function PlanDetailModal({
 
         <div className="grid gap-5 px-5 py-5 sm:grid-cols-2">
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-ink">Attractions selected (Module 4)</h3>
+            <h3 className="mb-2 text-sm font-semibold text-ink">Destinations in this trip</h3>
             <ul className="space-y-2">
               {plan.attractionIds.map((id) => {
                 const a = ATTRACTION_MAP[id];

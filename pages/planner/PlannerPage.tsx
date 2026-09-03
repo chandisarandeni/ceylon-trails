@@ -12,7 +12,8 @@ import {
   SparklesIcon,
   UmbrellaIcon,
   UtensilsIcon,
-  ScrollTextIcon
+  ScrollTextIcon,
+  AlertCircleIcon
 } from 'lucide-react';
 import { HUBS } from '../../lib/data/attractions';
 import { InterestLevel, ScoreKey, TransportMode, TravelStyle } from '../../types/tourism';
@@ -48,14 +49,52 @@ const LEVELS: { value: InterestLevel; label: string }[] = [
 export function PlannerPage() {
   const { preferences, setPreferences, generate, isRunning } = usePlannerStore();
   const router = useRouter();
-  const [, setTouched] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const hubOptions = HUBS.map((hub) => ({ value: hub.id, label: `${hub.name} – ${hub.city}` }));
 
+  const validate = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!preferences.days || preferences.days <= 0) {
+      newErrors.days = 'Please enter a valid trip duration (e.g. 7 days).';
+    }
+    if (!preferences.budget || preferences.budget <= 0) {
+      newErrors.budget = 'Please enter your total travel budget (e.g. Rs.150,000).';
+    }
+    if (preferences.emergencyReserve === undefined || preferences.emergencyReserve === null || preferences.emergencyReserve <= 0) {
+      newErrors.emergencyReserve = 'Please enter a minimum emergency reserve (e.g. Rs.10,000).';
+    }
+    if (!preferences.startHubId) {
+      newErrors.startHubId = 'Starting location is required.';
+    }
+    if (!preferences.endHubId) {
+      newErrors.endHubId = 'Ending location is required.';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handlePreferenceChange = (update: Partial<typeof preferences>) => {
+    setPreferences(update);
+    const keys = Object.keys(update);
+    setErrors((prev) => {
+      const next = { ...prev };
+      keys.forEach((k) => delete next[k]);
+      return next;
+    });
+  };
+
   const onGenerate = () => {
-    setTouched(true);
+    if (!validate()) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     generate(() => router.push('/decision'));
   };
+
+  const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -67,10 +106,21 @@ export function PlannerPage() {
           Trip Planner
         </h1>
         <p className="mt-2 text-base text-ink-muted">
-          Everything the five modules consume comes from this form. Change any value and re-run the
-          pipeline to see different candidate plans, routes, costs and the final recommendation.
+          Fill in your travel preferences, trip duration, and budget to generate custom Sri Lanka travel itineraries.
         </p>
       </header>
+
+      {hasErrors ? (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 shadow-sm flex items-start gap-3">
+          <AlertCircleIcon className="h-5 w-5 shrink-0 text-red-600 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-semibold">Please complete all required trip fields</h3>
+            <p className="mt-1 text-xs text-red-700">
+              Highlighted fields in red require valid values before generating candidate travel plans.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="space-y-5">
         <Card as="section">
@@ -83,22 +133,26 @@ export function PlannerPage() {
             <NumberField
               id="days"
               label="Trip duration"
+              placeholder="e.g. 7"
               value={preferences.days}
-              min={2}
-              max={21}
+              min={1}
+              max={30}
               suffix="days"
-              onChange={(days) => setPreferences({ days })}
+              error={errors.days}
+              onChange={(days) => handlePreferenceChange({ days })}
             />
 
             <NumberField
               id="budget"
               label="Total budget"
+              placeholder="e.g. 150000"
               value={preferences.budget}
-              min={30000}
-              max={1000000}
+              min={10000}
+              max={5000000}
               step={5000}
               prefix="Rs."
-              onChange={(budget) => setPreferences({ budget })}
+              error={errors.budget}
+              onChange={(budget) => handlePreferenceChange({ budget })}
             />
 
             <SelectField
@@ -106,7 +160,8 @@ export function PlannerPage() {
               label="Starting location"
               value={preferences.startHubId}
               options={hubOptions}
-              onChange={(startHubId) => setPreferences({ startHubId })}
+              error={errors.startHubId}
+              onChange={(startHubId) => handlePreferenceChange({ startHubId })}
             />
 
             <SelectField
@@ -114,31 +169,32 @@ export function PlannerPage() {
               label="Ending location"
               value={preferences.endHubId}
               options={hubOptions}
-              onChange={(endHubId) => setPreferences({ endHubId })}
+              error={errors.endHubId}
+              onChange={(endHubId) => handlePreferenceChange({ endHubId })}
             />
 
             <SegmentedControl<TravelStyle>
               label="Travel style"
-              hint="Drives accommodation and food rates in Module 2."
+              hint="Select your preferred comfort and pace level."
               value={preferences.travelStyle}
               options={[
                 { value: 'Budget', label: 'Budget' },
                 { value: 'Balanced', label: 'Balanced' },
                 { value: 'Comfort', label: 'Comfort' }
               ]}
-              onChange={(travelStyle) => setPreferences({ travelStyle })}
+              onChange={(travelStyle) => handlePreferenceChange({ travelStyle })}
             />
 
             <SelectField<TransportMode>
               id="transport"
               label="Preferred transportation"
-              hint="Sets edge speed and cost per km in the tourism network."
+              hint="Select your preferred transport mode."
               value={preferences.transport}
               options={[
-                { value: 'Public Transport', label: 'Public Transport' },
-                { value: 'Private Transport', label: 'Private Transport' }
+                { value: 'Public Transport', label: 'Public Transport (Bus & Train)' },
+                { value: 'Private Transport', label: 'Private Transport (Car & Van)' }
               ]}
-              onChange={(transport) => setPreferences({ transport })}
+              onChange={(transport) => handlePreferenceChange({ transport })}
             />
           </CardBody>
         </Card>
@@ -162,7 +218,7 @@ export function PlannerPage() {
                     value={preferences.interests[interest.key] || 'Low'}
                     options={LEVELS}
                     onChange={(level) =>
-                      setPreferences({
+                      handlePreferenceChange({
                         interests: { ...preferences.interests, [interest.key]: level }
                       })
                     }
@@ -188,7 +244,7 @@ export function PlannerPage() {
               max={10}
               step={0.5}
               display={`${preferences.maxDailyTravelHours}h / day`}
-              onChange={(maxDailyTravelHours) => setPreferences({ maxDailyTravelHours })}
+              onChange={(maxDailyTravelHours) => handlePreferenceChange({ maxDailyTravelHours })}
             />
 
             <RangeField
@@ -196,21 +252,23 @@ export function PlannerPage() {
               label="Maximum number of destinations"
               value={preferences.maxDestinations}
               min={3}
-              max={8}
+              max={30}
               display={`${preferences.maxDestinations} sites`}
-              onChange={(maxDestinations) => setPreferences({ maxDestinations })}
+              onChange={(maxDestinations) => handlePreferenceChange({ maxDestinations })}
             />
 
             <NumberField
               id="reserve"
               label="Minimum emergency reserve"
               hint="Held back from all spending."
+              placeholder="e.g. 10000"
               value={preferences.emergencyReserve}
               min={0}
-              max={100000}
+              max={1000000}
               step={1000}
               prefix="Rs."
-              onChange={(emergencyReserve) => setPreferences({ emergencyReserve })}
+              error={errors.emergencyReserve}
+              onChange={(emergencyReserve) => handlePreferenceChange({ emergencyReserve })}
             />
           </CardBody>
         </Card>
@@ -227,4 +285,3 @@ export function PlannerPage() {
 }
 
 export default PlannerPage;
-

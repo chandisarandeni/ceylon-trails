@@ -13,11 +13,11 @@ import { optimizeFromNetworkId } from '../lib/api/optimization';
 
 
 export const MODULE_STEPS = [
-  { key: 'decision', module: 'Module 4', title: 'Decision', path: '/decision' },
-  { key: 'network', module: 'Module 3', title: 'Network', path: '/network' },
-  { key: 'route', module: 'Module 1', title: 'Route', path: '/route' },
-  { key: 'resources', module: 'Module 2', title: 'Resources', path: '/resources' },
-  { key: 'optimization', module: 'Module 5', title: 'Optimization', path: '/optimization' }
+  { key: 'decision', module: 'Step 1', title: 'Destinations', path: '/decision' },
+  { key: 'network', module: 'Step 2', title: 'Connections', path: '/network' },
+  { key: 'route', module: 'Step 3', title: 'Route', path: '/route' },
+  { key: 'resources', module: 'Step 4', title: 'Budget', path: '/resources' },
+  { key: 'optimization', module: 'Step 5', title: 'Recommendation', path: '/optimization' }
 ] as const;
 
 export type ModuleKey = (typeof MODULE_STEPS)[number]['key'];

@@ -8,10 +8,9 @@ export function EmptyPipelineState({ moduleName }: { moduleName: string }) {
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-forest-50 text-forest-600">
         <RouteIcon className="h-6 w-6" aria-hidden />
       </span>
-      <h1 className="mt-4 text-xl font-semibold text-ink">{moduleName} has no data yet</h1>
+      <h1 className="mt-4 text-xl font-semibold text-ink">No trip data yet</h1>
       <p className="mt-2 text-sm text-ink-muted">
-        The pipeline runs in a fixed order. Enter the tourist’s preferences and generate candidate
-        plans first – every module downstream consumes the previous module’s output.
+        Start by entering your travel preferences in the Trip Planner. Once you generate plans, you can explore all your results here.
       </p>
       <ButtonLink to="/planner" className="mt-5">
         Go to Trip Planner

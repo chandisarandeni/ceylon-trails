@@ -3,8 +3,8 @@ import { Module5Weights, UserPreferences } from '../../types/tourism';
 export const DEFAULT_PREFERENCES: UserPreferences = {
   name: 'John',
   country: 'United Kingdom',
-  days: 7,
-  budget: 150000,
+  days: 0,
+  budget: 0,
   startHubId: 'hub-cmb',
   endHubId: 'hub-cmb',
   travelStyle: 'Balanced',
@@ -22,7 +22,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   },
   optionalInterests: [],
   maxDailyTravelHours: 5,
-  emergencyReserve: 10000,
+  emergencyReserve: 0,
   maxDestinations: 5
 };
 

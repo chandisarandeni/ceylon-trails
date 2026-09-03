@@ -36,46 +36,19 @@ export function ModuleResourcesPage() {
   return (
     <div>
       <ModuleHeader
-        moduleTag="MODULE 2"
-        pipelinePosition="Stage 4 of 5 • resource requirements & feasibility"
-        title="Resource Allocation & Feasibility"
-        purpose="Can the tourist actually afford and execute each candidate plan? Module 2 calculates lodging, food, transport and activity costs, then runs 0/1 knapsack dynamic programming to allocate optional experiences from leftover budget."
-        algorithms={[
-          'Resource Breakdown Accounting',
-          '0/1 Knapsack (Dynamic Programming)',
-          'Hard Budget & Time Constraint Evaluation'
-        ]}
+        moduleTag="STEP 4"
+        title="Budget & Cost Breakdown"
+        purpose="Here’s a full breakdown of your trip costs — accommodation, transport, meals, activities, and emergency reserve — so you know exactly what fits within your budget."
       />
 
-      <IOPanel
-        input={[
-          { label: 'Budget cap', value: formatRs(preferences.budget) },
-          { label: 'Trip duration', value: `${preferences.days} days` },
-          { label: 'Travel style', value: preferences.travelStyle },
-          { label: 'Transport mode', value: preferences.transport },
-          { label: 'Emergency reserve', value: formatRs(preferences.emergencyReserve) }
-        ]}
-        processing={[
-          'Compute accommodation nights and costs based on travel style and province lodging rates.',
-          'Add route transport costs (Module 1) and core activity entry fees.',
-          'Hold back emergency reserve, then use 0/1 knapsack DP to maximize optional activity value within leftover budget.',
-          'Flag plan feasibility: total cost <= budget, days required <= available days, peak transfer <= daily cap.'
-        ]}
-        output={[
-          { label: 'Feasible plans', value: `${result.plans.filter((p) => p.resources.feasible).length} of ${result.plans.length}` },
-          { label: 'This plan total', value: formatRs(r.totalCost) },
-          { label: 'Remaining budget', value: formatRs(r.remainingBudget) },
-          { label: 'Optional experiences added', value: `${r.knapsack.selected.length}` }
-        ]}
-        handoff="Resource breakdown and feasibility flags for each plan are sent to Module 5 for final multi-criteria scoring."
-      />
+
 
       <div className="mt-6">
         <PlanSelector
           plans={result.plans}
           activePlanId={plan.id}
           onSelect={setActivePlanId}
-          label="Inspect resource allocation for a plan"
+          label="View budget breakdown for a trip option"
         />
       </div>
 
@@ -180,11 +153,11 @@ export function ModuleResourcesPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader
-              eyebrow="DYNAMIC PROGRAMMING"
-              title="Optional activity allocation (0-1 knapsack)"
-              subtitle={`Capacity = unused budget after committed costs: ${formatRs(
+              eyebrow="BONUS EXPERIENCES"
+              title="Optional extras added within your remaining budget"
+              subtitle={`You have ${formatRs(
                 r.knapsack.capacity
-              )}`}
+              )} left after essential costs — here are the extra experiences we’ve added for you.`}
             />
             <CardBody className="px-0 py-0">
               <TableWrap>
@@ -238,8 +211,8 @@ export function ModuleResourcesPage() {
           </Card>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile label="DP value" value={r.knapsack.totalValue.toFixed(1)} hint="Selected optional value" />
-            <StatTile label="DP spend" value={formatRsShort(r.knapsack.totalCost)} />
+            <StatTile label="Bonus value" value={r.knapsack.totalValue.toFixed(1)} hint="Optional extras added" />
+            <StatTile label="Extras spend" value={formatRsShort(r.knapsack.totalCost)} />
             <StatTile label="Nights" value={r.accommodationNights} />
             <StatTile
               label="Days used"
@@ -252,10 +225,9 @@ export function ModuleResourcesPage() {
 
       <StepNav
         backTo="/route"
-        backLabel="Back to Module 1"
+        backLabel="Back to route"
         nextTo="/optimization"
-        nextLabel="Continue to Overall Optimization"
-        note="Next: Module 5 excludes infeasible plans and ranks the rest."
+        nextLabel="See final recommendation"
       />
     </div>
   );

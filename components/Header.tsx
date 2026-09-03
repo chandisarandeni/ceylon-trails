@@ -13,8 +13,7 @@ const NAV = [
   { href: '/planner', label: 'Trip Planner' },
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/compare', label: 'Compare Plans' },
-  { href: '/itinerary', label: 'Final Itinerary' },
-  { href: '/system', label: 'System & Algorithms' }
+  { href: '/itinerary', label: 'Final Itinerary' }
 ];
 
 export function Header() {
@@ -35,7 +34,7 @@ export function Header() {
               Ceylon Trails
             </span>
             <span className="block font-mono text-[10px] leading-tight text-forest-500">
-              Smart Tourism Decision Support
+              Smart Sri Lanka Travel Planner
             </span>
           </span>
         </Link>
