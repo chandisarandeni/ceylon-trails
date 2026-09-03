@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { CandidatePlan } from '../../types/tourism';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { EmptyPipelineState } from '../../components/EmptyPipelineState';
@@ -125,99 +124,7 @@ export function DashboardPage() {
         </CardBody>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader eyebrow="PLANNING STEPS" title="What we found for you" />
-          <CardBody>
-            <ol className="space-y-3">
-              {[
-                {
-                  href: '/decision',
-                  tag: 'Step 1',
-                  title: 'Destination Matching',
-                  value: `${result.plans.length} trip options from ${result.rankedAttractions.length} attractions matched to your interests`
-                },
-                {
-                  href: '/network',
-                  tag: 'Step 2',
-                  title: 'Route Connections',
-                  value: `${result.plans.reduce(
-                    (sum, p) => sum + p.network.edges.length,
-                    0
-                  )} travel connections mapped across all trip options`
-                },
-                {
-                  href: '/route',
-                  tag: 'Step 3',
-                  title: 'Best Route',
-                  value: `${result.plans.length} routes optimised, shortest ${Math.min(
-                    ...result.plans.map((p) => Math.round(p.route.totalDistanceKm))
-                  )} km`
-                },
-                {
-                  href: '/resources',
-                  tag: 'Step 4',
-                  title: 'Budget Breakdown',
-                  value: `${feasible.length} trip options fit your budget, cheapest ${formatRs(
-                    Math.min(...result.plans.map((p) => p.resources.totalCost))
-                  )}`
-                },
-                {
-                  href: '/optimization',
-                  tag: 'Step 5',
-                  title: 'Best Recommendation',
-                  value: selected
-                    ? `${selected.label} recommended with ${formatPct(selected.score?.overallScore ?? 0)} match score`
-                    : 'No plan could be recommended'
-                }
-              ].map((item) => (
-                <li key={item.tag}>
-                  <Link
-                    href={item.href}
-                    className="flex items-start justify-between gap-3 rounded-xl border border-line p-3 transition-colors duration-150 ease-out hover:border-forest-300 hover:bg-forest-50/40"
-                  >
-                    <span>
-                      <span className="font-mono text-[11px] text-forest-500">{item.tag}</span>
-                      <span className="block text-sm font-semibold text-ink">{item.title}</span>
-                      <span className="block text-xs text-ink-muted">{item.value}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </CardBody>
-        </Card>
 
-        <Card>
-          <CardHeader eyebrow="YOUR TRIP PREFERENCES" title="Your travel preferences" />
-          <CardBody>
-            <dl className="grid grid-cols-2 gap-3 text-sm">
-              {[
-                ['Tourist', `${preferences.name} (${preferences.country})`],
-                ['Duration', `${preferences.days} days`],
-                ['Budget', formatRs(preferences.budget)],
-                ['Emergency reserve', formatRs(preferences.emergencyReserve)],
-                ['Travel style', preferences.travelStyle],
-                ['Transport', preferences.transport],
-                ['Daily travel cap', `${preferences.maxDailyTravelHours}h`],
-                ['Max destinations', `${preferences.maxDestinations}`],
-                [
-                  'Core interests',
-                  Object.entries(preferences.interests)
-                    .map(([key, level]) => `${key} ${level}`)
-                    .join(', ')
-                ],
-                ['Optional interests', preferences.optionalInterests.join(', ') || '–']
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-xl border border-line p-3">
-                  <dt className="text-xs text-ink-muted">{label}</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-ink">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </CardBody>
-        </Card>
-      </div>
     </div>
   );
 }
