@@ -59,14 +59,7 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 lg:ml-0">
-          {result ? (
-            <span className="hidden items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-xs text-ink-muted sm:flex">
-              <span className="font-semibold text-ink">{preferences.name}</span>
-              <span className="tabular">
-                {preferences.days}d • Rs.{(preferences.budget / 1000).toFixed(0)}k
-              </span>
-            </span>
-          ) : null}
+
 
           {result ? (
             <Button variant="secondary" size="sm" onClick={reset}>

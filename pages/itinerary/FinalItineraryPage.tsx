@@ -259,9 +259,15 @@ export function FinalItineraryPage() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-3 text-sm text-ink-muted">
-                    No scheduled attraction – rest, local exploration or buffer for delays.
-                  </p>
+                  <div className="mt-3 rounded-xl border border-line bg-canvas/60 p-3 text-sm">
+                    <p className="font-medium text-ink flex items-center gap-1.5">
+                      <SparklesIcon className="h-4 w-4 text-forest-600" aria-hidden />
+                      Leisure & Local Exploration
+                    </p>
+                    <p className="mt-1 text-xs text-ink-muted">
+                      Enjoy a relaxed pace today — explore local markets, nearby scenic spots, local dining, or relax at your stay in {pointName(day.toId)}.
+                    </p>
+                  </div>
                 )}
 
                 <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-line pt-3 text-xs text-ink-muted">

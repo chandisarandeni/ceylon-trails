@@ -55,6 +55,10 @@ export function buildItinerary(route: OptimizedRoute, prefs: UserPreferences): I
     };
   };
 
+  const isMultiDay = prefs.days >= 5;
+  const maxActivitiesPerDay = isMultiDay ? 2 : 3;
+  const maxActivityHoursPerDay = isMultiDay ? 6 : DAILY_ACTIVITY_CAPACITY;
+
   route.legs.forEach((leg) => {
     const wouldExceedTravel =
       current.travelHours > 0 && current.travelHours + leg.travelHours > prefs.maxDailyTravelHours;
@@ -68,12 +72,17 @@ export function buildItinerary(route: OptimizedRoute, prefs: UserPreferences): I
 
     const attraction = ATTRACTION_MAP[leg.to];
     if (attraction) {
+      const overCount = current.activities.length >= maxActivitiesPerDay;
       const overActivity =
-        current.activityHours + attraction.visitDuration > DAILY_ACTIVITY_CAPACITY;
+        current.activityHours + attraction.visitDuration > maxActivityHoursPerDay;
       const overCombined =
         current.travelHours + current.activityHours + attraction.visitDuration >
-        prefs.maxDailyTravelHours + DAILY_ACTIVITY_CAPACITY;
-      if (overActivity || overCombined) startNewDay(leg.to, `Full day at ${attraction.city}`);
+        prefs.maxDailyTravelHours + maxActivityHoursPerDay;
+
+      if ((overCount || overActivity || overCombined) && current.activities.length > 0) {
+        startNewDay(leg.to, `Explore ${attraction.city}`);
+      }
+
       current.activities.push({
         name: attraction.name,
         hours: attraction.visitDuration,
@@ -85,24 +94,10 @@ export function buildItinerary(route: OptimizedRoute, prefs: UserPreferences): I
   });
   drafts.push(current);
 
-  // Pad with leisure days when the route needs fewer days than the tourist has.
-  while (drafts.length < prefs.days) {
-    const last = drafts[drafts.length - 1];
-    const insertAt = Math.max(1, drafts.length - 1);
-    drafts.splice(insertAt, 0, {
-      travelHours: 0,
-      travelCost: 0,
-      transport: '–',
-      fromId: last.fromId,
-      toId: drafts[insertAt - 1].toId,
-      activities: [],
-      activityHours: 0,
-      note: 'Buffer / leisure day at the same base'
-    });
-  }
+
 
   const daysRequired = drafts.length;
-  const nights = Math.max(0, Math.min(daysRequired, prefs.days) - 1);
+  const nights = Math.max(0, daysRequired - 1);
   const peakDailyTravelHours = drafts.reduce((max, d) => Math.max(max, d.travelHours), 0);
 
   let accommodationCost = 0;
@@ -140,7 +135,7 @@ export function buildItinerary(route: OptimizedRoute, prefs: UserPreferences): I
     peakDailyTravelHours: Math.round(peakDailyTravelHours * 10) / 10,
     accommodationNights: nights,
     accommodationCost,
-    foodCost: style.foodPerDay * Math.min(daysRequired, prefs.days),
+    foodCost: style.foodPerDay * daysRequired,
     timeFeasible: daysRequired <= prefs.days,
     dailyTravelFeasible: peakDailyTravelHours <= prefs.maxDailyTravelHours + 0.5
   };

@@ -23,7 +23,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   optionalInterests: [],
   maxDailyTravelHours: 5,
   emergencyReserve: 0,
-  maxDestinations: 5
+  maxDestinations: 15
 };
 
 export const DEFAULT_WEIGHTS: Module5Weights = {

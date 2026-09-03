@@ -83,7 +83,9 @@ export function scoreAttractions(prefs: UserPreferences): ScoredAttraction[] {
 }
 
 function planSize(prefs: UserPreferences): number {
-  return clamp(Math.round(prefs.days * 0.72), 3, Math.max(3, prefs.maxDestinations));
+  const suggested = Math.round(prefs.days * 0.85);
+  const cap = prefs.maxDestinations && prefs.maxDestinations > 0 ? prefs.maxDestinations : Math.max(suggested, 15);
+  return clamp(suggested, 3, cap);
 }
 
 function summarise(
